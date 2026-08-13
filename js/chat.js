@@ -9,6 +9,8 @@ const MindLinkChat = (() => {
   let _streamingMessageEl = null;
   let _attachedFiles = [];
   let _editingMessageId = null;
+  // 📱 LINEモード（ONの間、送受信がLINE風になる。アプリを閉じても覚えている）
+  let _lineMode = MindLinkStorage.get('line_mode', false);
 
   const SEND_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`;
   const STOP_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="10"/><rect x="9" y="9" width="6" height="6"/></svg>`;
@@ -45,6 +47,23 @@ const MindLinkChat = (() => {
     if (!timestamp) return '';
     return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
+
+  // ── 📱 LINEモード ──
+  // ボタンの見た目を、今のON/OFFに合わせる
+  function applyLineToggle() {
+    document.getElementById('btn-line-mode')?.classList.toggle('on', _lineMode);
+  }
+
+  // 📱ボタンを押したときの切り替え
+  function toggleLineMode() {
+    _lineMode = !_lineMode;
+    MindLinkStorage.set('line_mode', _lineMode);
+    applyLineToggle();
+    MindLinkApp.showToast(_lineMode ? '📱 LINEモード ON' : 'LINEモード OFF');
+  }
+
+  // 他のモジュール（api.js）から今の状態を知るため
+  function isLineMode() { return _lineMode; }
 
   // Markdown設定
   function setupMarkdown() {
@@ -225,7 +244,7 @@ const MindLinkChat = (() => {
     const showActions = !msg.isStatus;
 
     wrapper.innerHTML = `
-      <div class="message ${isUser ? 'user' : 'assistant'}" data-id="${msg.id}">
+      <div class="message ${isUser ? 'user' : 'assistant'}${msg.line ? ' line' : ''}" data-id="${msg.id}">
         <div class="message-avatar">${avatarContent}</div>
         <div class="message-content">
           <div class="message-role">${roleName}</div>
@@ -404,7 +423,7 @@ const MindLinkChat = (() => {
     }
 
     wrapper.innerHTML = `
-      <div class="message assistant">
+      <div class="message assistant${_lineMode ? ' line' : ''}">
         <div class="message-avatar">${avatarContent}</div>
         <div class="message-content">
           <div class="message-role">${persona?.name || 'AI'}</div>
@@ -469,7 +488,7 @@ const MindLinkChat = (() => {
     }
 
     div.innerHTML = `
-      <div class="message assistant">
+      <div class="message assistant${_lineMode ? ' line' : ''}">
         <div class="message-avatar">${avatarContent}</div>
         <div class="message-content">
           <div class="message-role">${persona?.name || 'AI'}</div>
@@ -543,6 +562,7 @@ const MindLinkChat = (() => {
       content,
       attachments: videoAttachments,
       timestamp: Date.now(),
+      line: _lineMode, // 📱 送った瞬間のLINEモードを覚えておく
     };
 
     // ストレージ用：base64データを除去して軽量化（localStorage容量制限対策）
@@ -641,6 +661,7 @@ const MindLinkChat = (() => {
           requestedModel: requestedModel,
           isSafety: isSafety,
           webSearchUsed: suggestions.includes('__web_search__'),
+          line: userMsg.line, // 📱 送信時のLINEモードを返事にも引き継ぐ
         };
         MindLinkStorage.addMessage(threadId, aiMsg);
         appendMessage(aiMsg, persona);
@@ -794,6 +815,10 @@ const MindLinkChat = (() => {
       btn.addEventListener('click', () => input.click());
       input.addEventListener('change', handleFileSelect);
     }
+
+    // 📱 LINEモードのボタンもここでつなぐ（アプリ起動時に1回だけ呼ばれるため）
+    document.getElementById('btn-line-mode')?.addEventListener('click', toggleLineMode);
+    applyLineToggle(); // 前回ONのまま閉じていたら、開いたときもON表示にする
   }
 
   // 動画のサイズ上限: APIリクエスト全体の20MB制限に対し、base64膨張（約4/3倍）と
@@ -986,6 +1011,7 @@ const MindLinkChat = (() => {
           role: 'assistant',
           content: contentToSave || '(...)',
           timestamp: Date.now(),
+          line: _lineMode, // 📱 自発メッセージもLINEモード中はLINE風に
         };
         MindLinkStorage.addMessage(threadId, aiMsg);
         appendMessage(aiMsg, persona);
@@ -1131,6 +1157,7 @@ const MindLinkChat = (() => {
           content: cleanedText || '(...)',
           timestamp: Date.now(),
           isSafety: finishReason === 'SAFETY' || finishReason === 'RECITATION',
+          line: _lineMode, // 📱 続きの生成もLINEモード中はLINE風に
         };
         MindLinkStorage.addMessage(threadId, aiMsg);
         appendMessage(aiMsg, persona);
@@ -1189,6 +1216,7 @@ const MindLinkChat = (() => {
     sendContinueMessage,
     addAttachment,
     addAttachmentSilent,
+    isLineMode, // 📱 api.js から今のLINEモードを見るため
   };
 })();
 

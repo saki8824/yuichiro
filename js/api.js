@@ -7,6 +7,20 @@ const MindLinkAPI = (() => {
   console.log('[MindLink API] v14 (Time Insight Optimized) Loaded');
   const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
 
+  // 📱 LINEモード中だけ、指示のいちばん最後に添える文体ルール
+  // （最後に置くことで、「太字にしてね」など前の指示より優先される）
+  const LINE_MODE_RULE = `
+
+【現在LINEモード】
+今はLINE（スマホのメッセージアプリ）でのやり取り中です。
+以下を、ほかのルールより優先してください。
+・地の文（情景や動作の描写）や内心の描写は書かない
+・セリフ（メッセージ本文）だけを1〜4行で返す
+・普段の口調はそのままに、LINEらしく短く軽く
+・絵文字は控えめに（使っても1個まで）
+・話題が複数あっても1通にまとめる
+・太字（**）などの装飾は使わない`;
+
   function getEffectiveModel(threadId) {
     if (threadId) {
       const thread = MindLinkStorage.getThread(threadId);
@@ -714,6 +728,9 @@ const MindLinkAPI = (() => {
               } catch (imgCtxErr) { /* 取得失敗時は注入なしで継続 */ }
             }
 
+            // 📱 今LINEモードかどうか（OFFのときは何も足さない）
+            const lineOn = window.MindLinkChat?.isLineMode?.() === true;
+
             const finalPromptText = [
               "【システム全体ルールの優先順位】\n必ず以下の優先順位に従って矛盾を排除して回答してください：\n1位: あなた（AI）自身の役割・人格、および対話相手（ユーザー）の情報（絶対的事実）\n2位: 今日の会話の流れ（同日内記憶補完・当日限り）\n3位: 自己省察RAG（ユーザーの関心・気づき含む）\n4位: 個別記憶（長期記憶）",
               profilePrompt,
@@ -728,7 +745,8 @@ const MindLinkAPI = (() => {
               imageRefPrompt,
               boldInstruction,
               "\n\n\n",
-              timeInstruction
+              timeInstruction,
+              lineOn ? LINE_MODE_RULE : '' // 📱 LINEモード中だけ、いちばん最後に添える
             ].filter(Boolean).join('');
 
             body.systemInstruction = {
