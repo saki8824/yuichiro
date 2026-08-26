@@ -1668,3 +1668,48 @@ body {
   --color-user-border: #6a4228;
   --color-ai-border:   #4a3020;
 }
+
+/* ══════════════════════════════════════════
+   📱 LINEモード
+   .line の印がついたメッセージだけに効くので、通常のメッセージは不変。
+   カラーテーマより後ろに置いて、どのテーマでもLINEの色になるようにする。
+   ══════════════════════════════════════════ */
+
+/* ① 📱ボタン：ONのときLINEの緑色に光る */
+#btn-line-mode.on {
+  background: #06c755;
+  border-color: #06c755;
+}
+
+/* ② LINE風の吹き出し（自分＝緑・AI＝白） */
+.message.line.user .message-bubble {
+  background: #06c755;
+  color: #fff;
+  border: none;
+  border-radius: 18px 18px 5px 18px;
+}
+.message.line.assistant .message-bubble {
+  background: #ffffff;
+  color: #1c1c1e;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 18px 18px 18px 5px;
+}
+
+/* ③ 白・緑の背景でも文字が読めるように色をそろえる */
+.message.line .message-bubble strong,
+.message.line .message-bubble em,
+.message.line .message-bubble h1,
+.message.line .message-bubble h2,
+.message.line .message-bubble h3 {
+  color: inherit;
+}
+.message.line.user .message-bubble a { color: #eaffef; }
+.message.line.assistant .message-bubble a { color: #0b7ec4; }
+.message.line.assistant .message-bubble code:not(pre code) {
+  background: rgba(0, 0, 0, 0.06);
+  color: #1c1c1e;
+}
+.message.line.user .message-bubble code:not(pre code) {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}

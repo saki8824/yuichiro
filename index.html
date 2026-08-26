@@ -10,6 +10,24 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="MindLink">
   <script>const CACHE_NAME = 'mindlink-v43';</script>
+  <!-- 📴 Service Worker の解除（古い画面が残り続けるのを防ぐ）
+       ・端末に登録されている Service Worker をすべて解除する
+       ・キャッシュ（ページの控え）をすべて削除する
+       ※ 会話データ（localStorage / IndexedDB）にはさわりません -->
+  <script>
+    (function () {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations()
+          .then(function (regs) { regs.forEach(function (r) { r.unregister(); }); })
+          .catch(function () { /* 未対応環境では何もしない */ });
+      }
+      if (window.caches && caches.keys) {
+        caches.keys()
+          .then(function (keys) { keys.forEach(function (k) { caches.delete(k); }); })
+          .catch(function () { /* 失敗しても無視 */ });
+      }
+    })();
+  </script>
   <title>MindLink</title>
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
